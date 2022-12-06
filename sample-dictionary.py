@@ -15,5 +15,5 @@ objs["food"] = "fish filet"
 objs["Food"] = "fish filet" # these are different outputs
 print(objs)
 
-for k, v in objs.items():
+for k, v in objs.items(): # iterate over dictionary
     print(k,v)
