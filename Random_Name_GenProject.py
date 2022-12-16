@@ -49,7 +49,7 @@ elif number > 0:
         print("You are now being given your unique EC2 Instance Name: ", EGen_ID_Name)
         
         print("Thank you! Please use the EGen random name generator again 😎 ")
-        
+
         
     
         
