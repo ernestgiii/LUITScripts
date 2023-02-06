@@ -1,41 +1,65 @@
 terraform {
   required_providers {
-    docker = {
-      source  = "terraform-providers/docker"
-      version = "~> 2.7.2"
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
     }
   }
 }
 
-provider "docker" {}
-
-resource "docker_image" "nodered_image" {
-  name = "nodered/node-red:latest"
+provider "aws" {
+  region = "us-east-1"
 }
 
-resource "random_string" "random" {
-  count   = 1
-  length  = 4
-  special = false
-  upper   = false
+resource "aws_instance" "jenkins-server" {
+  ami           = "ami-0aa7d40eeae50c9a9"
+  instance_type = "t2.micro"
+  
+
+  tags = {
+    Name = "Jenkins-prod"
+  }
+  
+  user_data              = <<EOF
+    #!/bin/bash
+    yum update -y
+     yum update –y
+    wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+    yum upgrade -y
+    amazon-linux-extras install java-openjdk11 -y
+    yum install jenkins -y
+    systemctl enable jenkins
+    systemctl start jenkins
+    EOF
 }
-resource "docker_container" "nodered_container" {
-  count = 1
-  name  = join("-", ["nodered", random_string.random[count.index].result])
-  image = docker_image.nodered_image.latest
-  ports {
-    internal = 1880
-    # external = 1880
+resource "aws_security_group" "jenkinssg" {
+  name        = "jenkinssg"
+  description = "Allow SSH and HTTP Traffic"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-
-output "IP-Address" {
-  value       = [for i in docker_container.nodered_container[*]: join(":", [i.ip_address],i.ports[*]["external"])]
-  description = "The IP address and external port  of the container"
-}
-
-output "container-name" {
-  value       = docker_container.nodered_container[*].name
-  description = "The name of the container"
+resource "aws_s3_bucket" "myjenkinsartifactsprod222023" {
+  bucket = "myjenkinsartifactsprod222023"
+  
 }
